@@ -1,39 +1,25 @@
 package org.jetbrains.ktor.undertow
 
-import io.undertow.*
-import org.jetbrains.ktor.application.*
+import io.undertow.Undertow
 import org.jetbrains.ktor.host.*
-import org.jetbrains.ktor.transform.*
 import java.util.concurrent.*
 import javax.net.ssl.*
 
-class UndertowApplicationHost(override val hostConfig: ApplicationHostConfig,
-                              val environment: ApplicationEnvironment,
-                              val lifecycle: ApplicationLifecycle) : ApplicationHostStartable {
+class UndertowApplicationHost(environment: ApplicationHostEnvironment) : BaseApplicationHost(environment) {
 
-    val pipeline = defaultHostPipeline(environment)
-    val application: Application get() = lifecycle.application
-
-    constructor(hostConfig: ApplicationHostConfig, environment: ApplicationEnvironment)
-            : this(hostConfig, environment, ApplicationLoader(environment, hostConfig.autoreload))
-
-    init {
-        lifecycle.onBeforeInitializeApplication {
-            install(ApplicationTransform).registerDefaultHandlers()
-        }
-    }
-
-    override fun start(wait: Boolean): ApplicationHostStartable {
+    override fun start(wait: Boolean): ApplicationHost {
+        environment.start()
         server.start()
         return this
     }
 
     override fun stop(gracePeriod: Long, timeout: Long, timeUnit: TimeUnit) {
         server.stop()
+        environment.stop()
     }
 
-    val server = Undertow.builder().apply {
-        hostConfig.connectors.map { connector ->
+    private val server: Undertow = Undertow.builder().apply {
+        environment.connectors.map { connector ->
             when (connector.type) {
                 ConnectorType.HTTP -> addHttpListener(connector.port, connector.host)
                 ConnectorType.HTTPS -> addHttpsListener(connector.port, connector.host, sslContext(connector as HostSSLConnectorConfig))
@@ -63,7 +49,7 @@ class UndertowApplicationHost(override val hostConfig: ApplicationHostConfig,
     }
 
     override fun toString(): String {
-        return "Undertow($hostConfig)"
+        return "Undertow($environment)"
     }
 }
 

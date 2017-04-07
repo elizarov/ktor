@@ -135,8 +135,8 @@ open class JettyIntegrationBenchmark : IntegrationBenchmark() {
 }
 
 open class UndertowIntegrationBenchmark : IntegrationBenchmark() {
-    override fun createServer(port: Int, configure: Application.() -> Unit): ApplicationHostStartable {
-        return embeddedUndertowServer(port, configure = configure)
+    override fun createServer(port: Int, main: Application.() -> Unit): ApplicationHost {
+        return embeddedServer(Undertow, port, module = main)
     }
 }
 
