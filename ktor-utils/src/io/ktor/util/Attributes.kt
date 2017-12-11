@@ -1,6 +1,6 @@
 package io.ktor.util
 
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Specifies a key for an attribute in [Attributes]
@@ -75,6 +75,7 @@ class Attributes {
     /**
      * Returns [List] of all [AttributeKey] instances in this map
      */
+    // todo: why no just `keys` ?
     val allKeys: List<AttributeKey<*>>
         get() = map.keys.toList()
 }

@@ -1,7 +1,7 @@
 package io.ktor.server.servlet
 
-import io.ktor.request.*
-import java.security.*
+import io.ktor.request.ApplicationRequest
+import java.security.Principal
 
 val ApplicationRequest.javaSecurityPrincipal: Principal?
     get() = when (this) {

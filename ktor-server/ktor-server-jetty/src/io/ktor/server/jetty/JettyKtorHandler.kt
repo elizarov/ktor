@@ -1,20 +1,20 @@
 package io.ktor.server.jetty
 
-import io.ktor.cio.*
-import io.ktor.cio.ByteBufferPool
-import io.ktor.http.*
-import io.ktor.pipeline.*
-import io.ktor.response.*
-import io.ktor.server.engine.*
-import io.ktor.util.*
-import kotlinx.coroutines.experimental.*
-import org.eclipse.jetty.io.*
-import org.eclipse.jetty.server.*
-import org.eclipse.jetty.server.handler.*
-import java.nio.*
-import java.util.concurrent.*
-import javax.servlet.*
-import javax.servlet.http.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.pipeline.execute
+import io.ktor.response.respond
+import io.ktor.server.engine.ApplicationEngineEnvironment
+import io.ktor.server.engine.EnginePipeline
+import io.ktor.util.DispatcherWithShutdown
+import kotlinx.coroutines.experimental.CoroutineDispatcher
+import kotlinx.coroutines.experimental.asCoroutineDispatcher
+import kotlinx.coroutines.experimental.launch
+import org.eclipse.jetty.server.Request
+import org.eclipse.jetty.server.handler.AbstractHandler
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import javax.servlet.MultipartConfigElement
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 internal class JettyKtorHandler(val environment: ApplicationEngineEnvironment, private val pipeline: () -> EnginePipeline, private val engineDispatcher: CoroutineDispatcher) : AbstractHandler() {
     private val executor = ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 8)
@@ -32,7 +32,8 @@ internal class JettyKtorHandler(val environment: ApplicationEngineEnvironment, p
     }
 
     override fun handle(target: String, baseRequest: Request, request: HttpServletRequest, response: HttpServletResponse) {
-        val call = JettyApplicationCall(environment.application, baseRequest, request, response, byteBufferPool, engineContext = engineDispatcher, userContext = dispatcher)
+        val call = JettyApplicationCall(environment.application, baseRequest, request, response,
+            engineContext = engineDispatcher, userContext = dispatcher)
 
         try {
             val contentType = request.contentType
@@ -59,18 +60,6 @@ internal class JettyKtorHandler(val environment: ApplicationEngineEnvironment, p
             launch(dispatcher) {
                 call.respond(HttpStatusCode.InternalServerError)
             }
-        }
-    }
-
-    private class Ticket(bb: ByteBuffer) : ReleasablePoolTicket(bb)
-
-    private val byteBufferPool = object : ByteBufferPool {
-        val jbp = MappedByteBufferPool(16)
-
-        override fun allocate(size: Int) = Ticket(jbp.acquire(size, false).apply { clear() })
-        override fun release(buffer: PoolTicket) {
-            jbp.release(buffer.buffer)
-            (buffer as Ticket).release()
         }
     }
 }

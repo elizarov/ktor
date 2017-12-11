@@ -1,17 +1,16 @@
 package io.ktor.server.netty
 
-import io.ktor.application.*
-import io.ktor.server.engine.*
-import io.netty.channel.*
-import io.netty.util.*
-import kotlinx.coroutines.experimental.*
+import io.ktor.application.Application
+import io.ktor.server.engine.BaseApplicationCall
+import io.netty.channel.ChannelHandlerContext
+import io.netty.util.ReferenceCountUtil
+import kotlinx.coroutines.experimental.Job
 
-internal abstract class NettyApplicationCall(application: Application,
-                                    val context: ChannelHandlerContext,
-                                    private val requestMessage: Any) : BaseApplicationCall(application) {
-
-    override val bufferPool = NettyByteBufferPool(context)
-
+internal abstract class NettyApplicationCall(
+    application: Application,
+    val context: ChannelHandlerContext,
+    private val requestMessage: Any
+) : BaseApplicationCall(application) {
     override abstract val request: NettyApplicationRequest
     override abstract val response: NettyApplicationResponse
 

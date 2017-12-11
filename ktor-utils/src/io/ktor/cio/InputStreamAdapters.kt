@@ -1,8 +1,9 @@
 package io.ktor.cio
 
-import kotlinx.coroutines.experimental.*
-import java.io.*
-import java.nio.*
+import kotlinx.coroutines.experimental.Unconfined
+import kotlinx.coroutines.experimental.runBlocking
+import java.io.InputStream
+import java.nio.ByteBuffer
 
 class InputStreamFromReadChannel(val channel: ReadChannel, val bufferPool: ByteBufferPool = NoPool) : InputStream() {
     private val singleByte = bufferPool.allocate(1)
@@ -33,8 +34,9 @@ class InputStreamFromReadChannel(val channel: ReadChannel, val bufferPool: ByteB
     }
 }
 
-private class ReadChannelFromInputStream(val input: InputStream) : ReadChannel {
+class ReadChannelFromInputStream(val input: InputStream) : ReadChannel {
     override suspend fun read(dst: ByteBuffer): Int {
+        // todo: what if dst is not backed by array (direct)?
         val count = input.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining())
         if (count > 0) {
             dst.position(dst.position() + count)
